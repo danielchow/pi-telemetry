@@ -555,6 +555,14 @@ function getZellijRouting(
   return { tabCandidates };
 }
 
+function tagZellijPane(sessionId: string): void {
+  // Only tag if we're in zellij
+  if (!process.env.ZELLIJ_PANE_ID) return;
+
+  const paneName = `pi-${sessionId}`;
+  safeExecFileSync("zellij", ["action", "rename-pane", paneName], 500);
+}
+
 function getRoutingSummary(ctx: ExtensionContext): InstanceSnapshot["routing"] {
   const rows = readPsRows();
   const byPid = new Map(rows.map((r) => [r.pid, r]));
@@ -824,6 +832,11 @@ export default function (pi: ExtensionAPI) {
   }
 
   pi.on("session_start", async (_event, ctx) => {
+    // Tag zellij pane with session ID for accurate jump navigation
+    const sessionId = ctx.sessionManager.getSessionId();
+    if (sessionId) {
+      tagZellijPane(sessionId);
+    }
     publish(ctx, "session_start");
     startHeartbeat();
   });
